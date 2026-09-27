@@ -58,9 +58,6 @@ async def invoke(tool_obj, **kwargs):
 
 
 async def fetch_manifest() -> tuple[str, dict]:
-    # Prefer the stable project alias; fall back to the explicitly named synthetic
-    # notebook so this diagnostic remains isolated even if the registry was not
-    # persisted by an earlier pre-deploy environment.
     last_error: Exception | None = None
     for project_ref in (PROJECT_ALIAS, NOTEBOOK_TITLE):
         try:
@@ -84,9 +81,11 @@ async def main() -> int:
     resolved_ref, result = await fetch_manifest()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
     artifacts = result.get("artifacts", [])
     assets = [v for a in artifacts for v in a.get("visual_assets", [])]
     candidates = [v for v in assets if v.get("visual_candidate")]
+
     print("VISUAL_MANIFEST_RESULT=" + json.dumps({
         "status": "PASS",
         "resolved_ref": resolved_ref,
@@ -94,7 +93,31 @@ async def main() -> int:
         "artifact_count": len(artifacts),
         "visual_assets": len(assets),
         "visual_candidates": len(candidates),
-    }))
+    }, ensure_ascii=False))
+
+    # Emit one bounded JSON line per artifact/slide so Railway logs can be used
+    # as a read-only transport for this synthetic Golden E2E validation.
+    for artifact in artifacts:
+        print("VISUAL_ARTIFACT=" + json.dumps({
+            "id": artifact.get("id"),
+            "title": artifact.get("title"),
+            "kind": artifact.get("kind"),
+            "status": artifact.get("status"),
+            "created_at": artifact.get("created_at"),
+        }, ensure_ascii=False))
+        for visual in artifact.get("visual_assets", []):
+            print("VISUAL_ASSET=" + json.dumps({
+                "artifact_id": artifact.get("id"),
+                "artifact_title": artifact.get("title"),
+                "slide": visual.get("slide"),
+                "image_url": visual.get("image_url"),
+                "width": visual.get("width"),
+                "height": visual.get("height"),
+                "alt_text": visual.get("alt_text"),
+                "text": visual.get("text"),
+                "text_chars": visual.get("text_chars"),
+                "visual_candidate": visual.get("visual_candidate"),
+            }, ensure_ascii=False))
     return 0
 
 
