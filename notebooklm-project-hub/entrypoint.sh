@@ -48,4 +48,4 @@ fi
 # Secrets are no longer needed by child processes after auth material is prepared.
 unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON
 
-exec python /app/hub_server.py
+exec python /app/launcher.py
