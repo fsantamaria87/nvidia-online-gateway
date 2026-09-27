@@ -1,11 +1,11 @@
 {
   "name": "nvidia-online-mcp",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "NODE_ENV=test node --test test.js"
+    "test": "NODE_ENV=test node --test test.js benchmark.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.2",
