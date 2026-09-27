@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir "notebooklm-py[mcp,headless]==${NOTEBOOKLM_VERSIO
 
 COPY entrypoint.sh /app/entrypoint.sh
 COPY hub_server.py /app/hub_server.py
+COPY launcher.py /app/launcher.py
 COPY golden_e2e.py /app/golden_e2e.py
 COPY visual_manifest_probe.py /app/visual_manifest_probe.py
 RUN chmod 0755 /app/entrypoint.sh
