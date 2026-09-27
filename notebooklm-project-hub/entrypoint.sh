@@ -36,12 +36,8 @@ print("Master token JSON parsed successfully")
 PY
 
 notebooklm --profile "$PROFILE" auth refresh >/tmp/notebooklm-auth-refresh.log 2>&1 || {
-  echo "WARN: initial NotebookLM auth refresh did not complete; MCP will attempt recovery on use" >&2
+  echo "WARN: initial NotebookLM auth refresh did not complete; Project Hub will attempt recovery on use" >&2
   cat /tmp/notebooklm-auth-refresh.log >&2 || true
 }
 
-exec notebooklm-mcp \
-  --transport http \
-  --host 0.0.0.0 \
-  --port "${PORT:-8080}" \
-  --profile "$PROFILE"
+exec python /app/hub_server.py
