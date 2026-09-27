@@ -19,7 +19,6 @@ else
 fi
 
 chmod 600 "$PROFILE_DIR/master_token.json"
-unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON
 
 python - "$PROFILE_DIR/master_token.json" <<'PY'
 import json, pathlib, sys
@@ -39,5 +38,14 @@ notebooklm --profile "$PROFILE" auth refresh >/tmp/notebooklm-auth-refresh.log 2
   echo "WARN: initial NotebookLM auth refresh did not complete; Project Hub will attempt recovery on use" >&2
   cat /tmp/notebooklm-auth-refresh.log >&2 || true
 }
+
+# Optional diagnostic: runs only when explicitly enabled. It is read-only with
+# respect to NotebookLM and writes its manifest to the persistent Railway volume.
+if [ "${RUN_GOLDEN_VISUAL_PROBE:-0}" = "1" ]; then
+  python /app/visual_manifest_probe.py || echo "WARN: Golden visual manifest probe failed" >&2
+fi
+
+# Secrets are no longer needed by child processes after auth material is prepared.
+unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON
 
 exec python /app/hub_server.py
