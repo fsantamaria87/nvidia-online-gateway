@@ -35,8 +35,9 @@ def bootstrap_auth() -> None:
 
 
 bootstrap_auth()
-import hub_server as hub
+import launcher
 
+hub = launcher.hub
 PROJECT_ALIAS = "golden-e2e"
 NOTEBOOK_TITLE = "MCP Integration Test - 2026-09-27"
 OUTPUT = Path(os.environ.get("GOLDEN_VISUAL_MANIFEST", "/data/oauth/golden_e2e_visual_assets.json"))
@@ -95,8 +96,6 @@ async def main() -> int:
         "visual_candidates": len(candidates),
     }, ensure_ascii=False))
 
-    # Emit one bounded JSON line per artifact/slide so Railway logs can be used
-    # as a read-only transport for this synthetic Golden E2E validation.
     for artifact in artifacts:
         print("VISUAL_ARTIFACT=" + json.dumps({
             "id": artifact.get("id"),
@@ -111,6 +110,8 @@ async def main() -> int:
                 "artifact_title": artifact.get("title"),
                 "slide": visual.get("slide"),
                 "image_url": visual.get("image_url"),
+                "image_proxy_url": visual.get("image_proxy_url"),
+                "proxy_expires_in_seconds": visual.get("proxy_expires_in_seconds"),
                 "width": visual.get("width"),
                 "height": visual.get("height"),
                 "alt_text": visual.get("alt_text"),
