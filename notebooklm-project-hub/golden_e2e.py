@@ -1,10 +1,40 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import inspect
 import json
-import time
+import os
+import subprocess
+from pathlib import Path
 
+
+def bootstrap_auth() -> None:
+    profile = os.environ.get("NOTEBOOKLM_PROFILE", "server")
+    home = Path(os.environ.get("NOTEBOOKLM_HOME", "/data"))
+    profile_dir = home / "profiles" / profile
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    token_path = profile_dir / "master_token.json"
+
+    b64 = os.environ.get("NOTEBOOKLM_MASTER_TOKEN_B64")
+    raw = os.environ.get("NOTEBOOKLM_MASTER_TOKEN_JSON")
+    if b64:
+        token_path.write_bytes(base64.b64decode(b64))
+    elif raw:
+        token_path.write_text(raw, encoding="utf-8")
+    elif not token_path.exists():
+        raise FileNotFoundError("NotebookLM master token is unavailable in pre-deploy environment")
+
+    token_path.chmod(0o600)
+    subprocess.run(
+        ["notebooklm", "--profile", profile, "auth", "refresh"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+bootstrap_auth()
 import hub_server as hub
 
 NOTEBOOK_TITLE = "MCP Integration Test - 2026-09-27"
@@ -32,8 +62,6 @@ def record(rows, name, ok, **extra):
 
 async def main():
     rows = []
-    task_research = None
-    task_deck = None
 
     try:
         r = await invoke(hub.project_list, include_sources=True)
@@ -42,7 +70,8 @@ async def main():
         if not matches:
             raise RuntimeError(f"Synthetic notebook not found: {NOTEBOOK_TITLE}")
     except Exception as exc:
-        record(rows, "project_list", False, error=type(exc).__name__)
+        if not rows or rows[-1].get("tool") != "project_list":
+            record(rows, "project_list", False, error=type(exc).__name__)
         print("GOLDEN_E2E_RESULT=" + json.dumps({"overall": "FAIL", "rows": rows}, ensure_ascii=False))
         return 1
 
@@ -68,12 +97,11 @@ async def main():
     try:
         r = await invoke(hub.project_research, project=PROJECT, action="start", query="industrial capacity utilization demand versus capacity definition", task_id=None, mode="fast", cited_only=False, max_sources=None)
         task_research = r.get("task_id")
-        ok = bool(task_research)
-        if ok:
+        if task_research:
             await asyncio.sleep(8)
             s = await invoke(hub.project_research, project=PROJECT, action="status", query=None, task_id=task_research, mode="fast", cited_only=False, max_sources=None)
-            status = str(s.get("result", {}).get("status", ""))
-            record(rows, "project_research", True, task_id=task_research, observed_status=status or "started")
+            result = s.get("result", {})
+            record(rows, "project_research", True, task_id=task_research, observed_status=str(result.get("status") or "started"))
         else:
             record(rows, "project_research", False, error="missing_task_id")
     except Exception as exc:
@@ -107,7 +135,7 @@ async def main():
         candidates = [v for v in visual_assets if v.get("visual_candidate")]
         record(rows, "project_artifact:list", bool(arts), artifact_count=len(arts), visual_assets=len(visual_assets), visual_candidates=len(candidates))
 
-        target = (completed[-1] if completed else (arts[-1] if arts else None))
+        target = completed[-1] if completed else (arts[-1] if arts else None)
         if target:
             d = await invoke(hub.project_artifact, project=PROJECT, action="download", artifact_id=target.get("id"), kind="slide_deck", output_format="pptx", include_visual_assets=True)
             record(rows, "project_artifact:download", bool(d.get("download_url")), artifact_id=d.get("artifact_id"), expires_in_seconds=d.get("expires_in_seconds"))
