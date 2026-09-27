@@ -37,7 +37,8 @@ def bootstrap_auth() -> None:
 bootstrap_auth()
 import hub_server as hub
 
-PROJECT = "golden-e2e"
+PROJECT_ALIAS = "golden-e2e"
+NOTEBOOK_TITLE = "MCP Integration Test - 2026-09-27"
 OUTPUT = Path(os.environ.get("GOLDEN_VISUAL_MANIFEST", "/data/oauth/golden_e2e_visual_assets.json"))
 
 
@@ -56,16 +57,31 @@ async def invoke(tool_obj, **kwargs):
     raise TypeError(f"Tool object is not directly invokable: {type(tool_obj)!r}")
 
 
+async def fetch_manifest() -> tuple[str, dict]:
+    # Prefer the stable project alias; fall back to the explicitly named synthetic
+    # notebook so this diagnostic remains isolated even if the registry was not
+    # persisted by an earlier pre-deploy environment.
+    last_error: Exception | None = None
+    for project_ref in (PROJECT_ALIAS, NOTEBOOK_TITLE):
+        try:
+            result = await invoke(
+                hub.project_artifact,
+                project=project_ref,
+                action="list",
+                artifact_id=None,
+                kind="slide_deck",
+                output_format="pptx",
+                include_visual_assets=True,
+            )
+            return project_ref, result
+        except ValueError as exc:
+            last_error = exc
+    assert last_error is not None
+    raise last_error
+
+
 async def main() -> int:
-    result = await invoke(
-        hub.project_artifact,
-        project=PROJECT,
-        action="list",
-        artifact_id=None,
-        kind="slide_deck",
-        output_format="pptx",
-        include_visual_assets=True,
-    )
+    resolved_ref, result = await fetch_manifest()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     artifacts = result.get("artifacts", [])
@@ -73,6 +89,7 @@ async def main() -> int:
     candidates = [v for v in assets if v.get("visual_candidate")]
     print("VISUAL_MANIFEST_RESULT=" + json.dumps({
         "status": "PASS",
+        "resolved_ref": resolved_ref,
         "path": str(OUTPUT),
         "artifact_count": len(artifacts),
         "visual_assets": len(assets),
