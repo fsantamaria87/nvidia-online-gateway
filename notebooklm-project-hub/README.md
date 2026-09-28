@@ -4,7 +4,7 @@ Compact project-oriented MCP facade over `notebooklm-py` 0.8.3.
 
 ## Public tool surface
 
-The runtime intentionally exposes seven project-level operations:
+The runtime intentionally exposes eight project-level operations:
 
 1. `project_list` — notebooks/projects and optional source health.
 2. `project_link` — stable project alias → NotebookLM notebook.
@@ -13,12 +13,19 @@ The runtime intentionally exposes seven project-level operations:
 5. `project_research` — start/status/import web research.
 6. `project_create_presentation` — start/status NotebookLM slide-deck generation.
 7. `project_artifact` — list/download artifacts and expose rendered slide images as reusable visual assets.
+8. `project_memory` — curate durable project activity, decisions, validated outcomes, evidence, and next steps into a persistent NotebookLM-grounded memory source.
 
 NotebookLM-generated decks are **source material**, not the final Hilex template. A downstream Hilex bridge may reuse strong diagrams/illustrations while preserving the immutable Hilex corporate shell.
 
 For slide decks, `project_artifact(action="list")` returns `visual_assets[]` with NotebookLM's rendered slide image URL, dimensions, alt text, extracted text, and a lightweight `visual_candidate` flag. This makes it possible to inspect/crop/reuse valuable visual material instead of discarding the NotebookLM design work.
 
 `project_artifact(action="download", output_format="pptx"|"pdf")` mints a short-lived signed `/hub/files/...` URL; artifact bytes stay outside the MCP JSON channel.
+
+## Persistent project memory
+
+`project_memory` uses a material-events-only policy and stores per-project memory under `/data/oauth/project_memory`. Exact duplicate fingerprints are rejected. Semantic deduplication (`exact+semantic-v1`) also rejects materially equivalent paraphrases while preserving related but distinct events when their strong identifiers differ.
+
+The generated `PROJECT_MEMORY.md — Activity & Decision Log` is synchronized into the linked NotebookLM notebook so `project_analyze` can recover memory events as grounded sources.
 
 ## Persistent state
 
@@ -36,4 +43,4 @@ Project aliases are stored at `/data/oauth/project_hub_registry.json`, on the sa
 - `NOTEBOOKLM_MCP_ALLOW_EXTERNAL_BIND=1`
 - `PROJECT_HUB_REGISTRY=/data/oauth/project_hub_registry.json`
 
-The Railway service must mount a persistent volume at `/data/oauth` so OAuth state and project aliases survive redeploys and sleep/wake cycles.
+The Railway service must mount a persistent volume at `/data/oauth` so OAuth state, project aliases, and curated project memory survive redeploys and sleep/wake cycles.
