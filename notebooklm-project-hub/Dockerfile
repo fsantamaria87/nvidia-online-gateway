@@ -19,6 +19,7 @@ COPY visual_manifest_probe.py /app/visual_manifest_probe.py
 COPY capacity_bootstrap.py /app/capacity_bootstrap.py
 COPY multi_project_bootstrap.py /app/multi_project_bootstrap.py
 COPY knowledge_bootstrap.py /app/knowledge_bootstrap.py
+COPY knowledge_hubs_payload.json /app/knowledge_hubs_payload.json
 COPY project_pair_bootstrap.py /app/project_pair_bootstrap.py
 RUN chmod 0755 /app/entrypoint.sh
 
