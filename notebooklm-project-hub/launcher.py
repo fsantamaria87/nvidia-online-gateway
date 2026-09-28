@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import httpx
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -87,7 +88,15 @@ async def project_memory(
     )
 
 
+async def _startup_probe() -> None:
+    tools = await hub.mcp.list_tools()
+    names = [getattr(t, "name", str(t)) for t in tools]
+    print("PROJECT_HUB_TOOL_PROBE=" + ",".join(names), flush=True)
+    print(f"PROJECT_HUB_TOOL_COUNT={len(names)}", flush=True)
+
+
 def main() -> None:
+    asyncio.run(_startup_probe())
     hub.main()
 
 
