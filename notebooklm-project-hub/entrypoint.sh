@@ -39,6 +39,12 @@ notebooklm --profile "$PROFILE" auth refresh >/tmp/notebooklm-auth-refresh.log 2
   cat /tmp/notebooklm-auth-refresh.log >&2 || true
 }
 
+# Optional one-shot Capacity knowledge bootstrap. The payload is supplied as a
+# temporary Railway secret, never committed to GitHub, and removed after use.
+if [ "${RUN_CAPACITY_BOOTSTRAP:-0}" = "1" ]; then
+  python /app/capacity_bootstrap.py
+fi
+
 # Optional diagnostic: runs only when explicitly enabled. It is read-only with
 # respect to NotebookLM and writes its manifest to the persistent Railway volume.
 if [ "${RUN_GOLDEN_VISUAL_PROBE:-0}" = "1" ]; then
@@ -46,6 +52,6 @@ if [ "${RUN_GOLDEN_VISUAL_PROBE:-0}" = "1" ]; then
 fi
 
 # Secrets are no longer needed by child processes after auth material is prepared.
-unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON
+unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON CAPACITY_BOOTSTRAP_B64 RUN_CAPACITY_BOOTSTRAP
 
 exec python /app/launcher.py
