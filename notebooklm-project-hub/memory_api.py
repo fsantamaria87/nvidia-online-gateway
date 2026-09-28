@@ -28,6 +28,7 @@ async def handle_project_memory(
             'event_count': len(events),
             'recent': events[-limit:],
             'policy': 'material-events-only',
+            'dedupe_policy': 'exact+semantic-v1',
         }
 
     event = {
@@ -62,16 +63,25 @@ async def handle_project_memory(
             'reason': 'event is not material enough for durable project memory',
         }
 
-    fp = mc._fingerprint(project, event)
-    if any(item.get('fingerprint') == fp for item in events):
+    duplicate = mc._find_duplicate(project, event, events)
+    if duplicate:
         return {
             'project': project,
             'persisted': False,
             'duplicate': True,
-            'fingerprint': fp,
-            'reason': 'equivalent memory event already exists',
+            'duplicate_kind': duplicate['kind'],
+            'fingerprint': duplicate['fingerprint'],
+            'matched_fingerprint': duplicate['matched_fingerprint'],
+            'semantic_score': duplicate['semantic_score'],
+            'shared_anchors': duplicate['shared_anchors'],
+            'reason': (
+                'semantically equivalent memory event already exists'
+                if duplicate['kind'] == 'semantic'
+                else 'equivalent memory event already exists'
+            ),
         }
 
+    fp = mc._fingerprint(project, event)
     item = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'fingerprint': fp,
