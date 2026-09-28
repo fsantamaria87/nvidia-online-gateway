@@ -16,6 +16,7 @@ COPY hub_server.py /app/hub_server.py
 COPY launcher.py /app/launcher.py
 COPY golden_e2e.py /app/golden_e2e.py
 COPY visual_manifest_probe.py /app/visual_manifest_probe.py
+COPY capacity_bootstrap.py /app/capacity_bootstrap.py
 RUN chmod 0755 /app/entrypoint.sh
 
 EXPOSE 8080
