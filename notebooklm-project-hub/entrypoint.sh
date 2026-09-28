@@ -47,6 +47,12 @@ if [ "${RUN_MULTI_PROJECT_BOOTSTRAP:-0}" = "1" ]; then
   python /app/multi_project_bootstrap.py
 fi
 
+# Generic one-shot Knowledge Hub bootstrap. This creates or reuses the requested
+# NotebookLM notebooks, adds missing curated sources, and updates project aliases.
+if [ "${RUN_KNOWLEDGE_BOOTSTRAP:-0}" = "1" ]; then
+  python /app/knowledge_bootstrap.py
+fi
+
 # One-shot bootstrap for the two next Knowledge Hubs. The implementation uses
 # asyncio.gather so production-program and excel-qa are created in parallel.
 if [ "${RUN_PROJECT_PAIR_BOOTSTRAP:-0}" = "1" ]; then
@@ -60,6 +66,8 @@ fi
 unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON \
   CAPACITY_BOOTSTRAP_B64 RUN_CAPACITY_BOOTSTRAP \
   MULTI_PROJECT_BOOTSTRAP_B64 RUN_MULTI_PROJECT_BOOTSTRAP \
-  RUN_PROJECT_PAIR_BOOTSTRAP KNOWLEDGE_BOOTSTRAP_B64
+  KNOWLEDGE_BOOTSTRAP_B64 RUN_KNOWLEDGE_BOOTSTRAP \
+  RUN_PROJECT_PAIR_BOOTSTRAP \
+  RUN_GOLDEN_VISUAL_PROBE
 
 exec python /app/launcher.py
