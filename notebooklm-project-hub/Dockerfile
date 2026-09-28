@@ -21,6 +21,8 @@ COPY multi_project_bootstrap.py /app/multi_project_bootstrap.py
 COPY knowledge_bootstrap.py /app/knowledge_bootstrap.py
 COPY knowledge_hubs_payload.json /app/knowledge_hubs_payload.json
 COPY project_pair_bootstrap.py /app/project_pair_bootstrap.py
+COPY project_memory.py /app/project_memory.py
+COPY memory_bootstrap.py /app/memory_bootstrap.py
 RUN chmod 0755 /app/entrypoint.sh
 
 EXPOSE 8080
