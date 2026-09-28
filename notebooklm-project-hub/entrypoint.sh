@@ -39,24 +39,27 @@ notebooklm --profile "$PROFILE" auth refresh >/tmp/notebooklm-auth-refresh.log 2
   cat /tmp/notebooklm-auth-refresh.log >&2 || true
 }
 
-# Optional one-shot Capacity knowledge bootstrap.
 if [ "${RUN_CAPACITY_BOOTSTRAP:-0}" = "1" ]; then
   python /app/capacity_bootstrap.py
 fi
 
-# Optional multi-project one-shot bootstrap. The base64 payload is supplied via
-# Railway variables and is removed from the child-process environment after use.
 if [ "${RUN_MULTI_PROJECT_BOOTSTRAP:-0}" = "1" ]; then
   python /app/multi_project_bootstrap.py
 fi
 
-# Optional diagnostic: read-only against NotebookLM.
+# One-shot bootstrap for the two next Knowledge Hubs. The implementation uses
+# asyncio.gather so production-program and excel-qa are created in parallel.
+if [ "${RUN_PROJECT_PAIR_BOOTSTRAP:-0}" = "1" ]; then
+  python /app/project_pair_bootstrap.py
+fi
+
 if [ "${RUN_GOLDEN_VISUAL_PROBE:-0}" = "1" ]; then
   python /app/visual_manifest_probe.py || echo "WARN: Golden visual manifest probe failed" >&2
 fi
 
 unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON \
   CAPACITY_BOOTSTRAP_B64 RUN_CAPACITY_BOOTSTRAP \
-  MULTI_PROJECT_BOOTSTRAP_B64 RUN_MULTI_PROJECT_BOOTSTRAP
+  MULTI_PROJECT_BOOTSTRAP_B64 RUN_MULTI_PROJECT_BOOTSTRAP \
+  RUN_PROJECT_PAIR_BOOTSTRAP KNOWLEDGE_BOOTSTRAP_B64
 
 exec python /app/launcher.py
