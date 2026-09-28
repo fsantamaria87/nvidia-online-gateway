@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 import hub_server as hub
+from memory_curator import register_memory_tool
 from notebooklm.mcp._filelink import DOWNLOAD_TTL, FileLinkError
 
 
@@ -53,6 +54,12 @@ async def hub_image_proxy(request: Request) -> Response:
         media_type=media_type,
         headers={"Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer"},
     )
+
+
+# Register the Memory Curator after the compact core tools are defined. This is
+# deliberately a separate tool because persisting project memory is a stateful
+# action and should be explicit/auditable rather than hidden inside project_sync.
+register_memory_tool(hub.mcp, hub)
 
 
 def main() -> None:
