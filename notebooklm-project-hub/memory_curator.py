@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Literal
 
@@ -22,6 +24,32 @@ SECRET_PATTERNS = [
     re.compile(r'(?i)(api[_ -]?key|password|passwd|oauth[_ -]?token|master[_ -]?token|bearer[_ -]?token|client[_ -]?secret)\s*[:=]'),
     re.compile(r'(?i)-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
 ]
+
+SEMANTIC_DUPLICATE_THRESHOLD = 0.90
+ANCHORED_DUPLICATE_THRESHOLD = 0.68
+SEMANTIC_FIELD_WEIGHTS = {
+    'activity': 0.20,
+    'decision': 0.30,
+    'result': 0.30,
+    'evidence': 0.10,
+    'title': 0.05,
+    'tags': 0.05,
+}
+CORE_SEMANTIC_FIELDS = ('activity', 'decision', 'result')
+
+STOPWORDS = {
+    'a', 'al', 'algo', 'algunos', 'ante', 'antes', 'como', 'con', 'contra',
+    'cual', 'cuando', 'de', 'del', 'desde', 'donde', 'durante', 'e', 'el',
+    'ella', 'ellas', 'ellos', 'en', 'entre', 'era', 'es', 'esa', 'ese',
+    'eso', 'esta', 'este', 'esto', 'fue', 'ha', 'hacia', 'hasta', 'la',
+    'las', 'lo', 'los', 'mas', 'me', 'mi', 'muy', 'nos', 'o', 'para',
+    'pero', 'por', 'porque', 'que', 'se', 'sobre', 'su', 'sus', 'te',
+    'tiene', 'un', 'una', 'uno', 'unos', 'unas', 'y', 'ya',
+    'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'on', 'for', 'from',
+    'with', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'this', 'that', 'these', 'those', 'it', 'its', 'by', 'at', 'into',
+    'during', 'over', 'under', 'only', 'should',
+}
 
 
 def _clean(value: Any) -> str:
@@ -44,6 +72,131 @@ def _fingerprint(project: str, event: dict[str, Any]) -> str:
         _clean(event.get('result')).lower(),
     ])
     return hashlib.sha256(canonical.encode('utf-8')).hexdigest()[:24]
+
+
+def _normalize_text(value: Any) -> str:
+    text = _clean(value).casefold()
+    text = unicodedata.normalize('NFKD', text)
+    return ''.join(ch for ch in text if not unicodedata.combining(ch))
+
+
+def _canonical_token(token: str) -> str:
+    if token in {'no', 'sin', 'without'}:
+        return 'not'
+    if token.startswith(('valid', 'verific', 'comprob')):
+        return 'verify'
+    if token.startswith(('aisl', 'separ')):
+        return 'isolate'
+    if token.startswith('registr'):
+        return 'record'
+    if token.startswith(('conserv', 'manten')):
+        return 'keep'
+    if token.startswith(('mezcl', 'incorpor')):
+        return 'mix'
+    if token.startswith('proyect'):
+        return 'project'
+    if token.startswith('memori'):
+        return 'memory'
+    if token.startswith('event'):
+        return 'event'
+    if token.startswith('multipl'):
+        return 'multi'
+    return token
+
+
+def _tokens(value: Any) -> set[str]:
+    raw = re.findall(r'[a-z0-9]+(?:[._-][a-z0-9]+)*', _normalize_text(value))
+    tokens: set[str] = set()
+    for token in raw:
+        if token in STOPWORDS:
+            continue
+        token = _canonical_token(token)
+        if len(token) >= 3 or any(ch.isdigit() for ch in token):
+            tokens.add(token)
+    return tokens
+
+
+def _field_similarity(left: Any, right: Any) -> float:
+    left_tokens = _tokens(left)
+    right_tokens = _tokens(right)
+    if not left_tokens or not right_tokens:
+        return 0.0
+    union = left_tokens | right_tokens
+    jaccard = len(left_tokens & right_tokens) / len(union)
+    left_sorted = ' '.join(sorted(left_tokens))
+    right_sorted = ' '.join(sorted(right_tokens))
+    sequence = SequenceMatcher(None, left_sorted, right_sorted).ratio()
+    return max(jaccard, sequence)
+
+
+def _strong_anchors(event: dict[str, Any]) -> set[str]:
+    anchors: set[str] = set()
+    for field in ('title', 'activity', 'decision', 'result', 'evidence', 'tags'):
+        for token in re.findall(r'[a-z0-9]+(?:[._-][a-z0-9]+)*', _normalize_text(event.get(field))):
+            if sum(ch.isdigit() for ch in token) >= 2 and len(token) >= 6:
+                anchors.add(token)
+    return anchors
+
+
+def _semantic_similarity(candidate: dict[str, Any], existing: dict[str, Any]) -> float:
+    weighted = 0.0
+    total_weight = 0.0
+    for field, weight in SEMANTIC_FIELD_WEIGHTS.items():
+        if not _clean(candidate.get(field)) or not _clean(existing.get(field)):
+            continue
+        weighted += weight * _field_similarity(candidate.get(field), existing.get(field))
+        total_weight += weight
+    if total_weight == 0:
+        return 0.0
+    return weighted / total_weight
+
+
+def _semantic_duplicate(candidate: dict[str, Any], existing: dict[str, Any]) -> tuple[bool, float, list[str]]:
+    comparable_core = sum(
+        1
+        for field in CORE_SEMANTIC_FIELDS
+        if _clean(candidate.get(field)) and _clean(existing.get(field))
+    )
+    if comparable_core < 2:
+        return False, 0.0, []
+
+    similarity = _semantic_similarity(candidate, existing)
+    candidate_anchors = _strong_anchors(candidate)
+    existing_anchors = _strong_anchors(existing)
+    shared_anchors = sorted(candidate_anchors & existing_anchors)
+    if candidate_anchors and existing_anchors and not shared_anchors:
+        return False, similarity, []
+
+    duplicate = (
+        similarity >= SEMANTIC_DUPLICATE_THRESHOLD
+        or (bool(shared_anchors) and similarity >= ANCHORED_DUPLICATE_THRESHOLD)
+    )
+    return duplicate, similarity, shared_anchors
+
+
+def _find_duplicate(project: str, event: dict[str, Any], events: list[dict[str, Any]]) -> dict[str, Any] | None:
+    fingerprint = _fingerprint(project, event)
+    for item in events:
+        if item.get('fingerprint') == fingerprint:
+            return {
+                'kind': 'exact',
+                'fingerprint': fingerprint,
+                'matched_fingerprint': item.get('fingerprint'),
+                'semantic_score': 1.0,
+                'shared_anchors': [],
+            }
+
+    for item in reversed(events):
+        duplicate, similarity, shared_anchors = _semantic_duplicate(event, item)
+        if duplicate:
+            return {
+                'kind': 'semantic',
+                'fingerprint': fingerprint,
+                'matched_fingerprint': item.get('fingerprint'),
+                'semantic_score': round(similarity, 4),
+                'shared_anchors': shared_anchors,
+            }
+    return None
 
 
 def _score(event: dict[str, Any]) -> tuple[int, list[str]]:
@@ -167,6 +320,7 @@ def register_memory_tool(mcp, hub) -> None:
                 'event_count': len(events),
                 'recent': events[-limit:],
                 'policy': 'material-events-only',
+                'dedupe_policy': 'exact+semantic-v1',
             }
 
         event = {
@@ -201,16 +355,25 @@ def register_memory_tool(mcp, hub) -> None:
                 'reason': 'event is not material enough for durable project memory',
             }
 
-        fp = _fingerprint(project, event)
-        if any(item.get('fingerprint') == fp for item in events):
+        duplicate = _find_duplicate(project, event, events)
+        if duplicate:
             return {
                 'project': project,
                 'persisted': False,
                 'duplicate': True,
-                'fingerprint': fp,
-                'reason': 'equivalent memory event already exists',
+                'duplicate_kind': duplicate['kind'],
+                'fingerprint': duplicate['fingerprint'],
+                'matched_fingerprint': duplicate['matched_fingerprint'],
+                'semantic_score': duplicate['semantic_score'],
+                'shared_anchors': duplicate['shared_anchors'],
+                'reason': (
+                    'semantically equivalent memory event already exists'
+                    if duplicate['kind'] == 'semantic'
+                    else 'equivalent memory event already exists'
+                ),
             }
 
+        fp = _fingerprint(project, event)
         item = {
             'timestamp': datetime.now(timezone.utc).isoformat(),
             'fingerprint': fp,
