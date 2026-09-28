@@ -39,19 +39,24 @@ notebooklm --profile "$PROFILE" auth refresh >/tmp/notebooklm-auth-refresh.log 2
   cat /tmp/notebooklm-auth-refresh.log >&2 || true
 }
 
-# Optional one-shot Capacity knowledge bootstrap. The payload is supplied as a
-# temporary Railway secret, never committed to GitHub, and removed after use.
+# Optional one-shot Capacity knowledge bootstrap.
 if [ "${RUN_CAPACITY_BOOTSTRAP:-0}" = "1" ]; then
   python /app/capacity_bootstrap.py
 fi
 
-# Optional diagnostic: runs only when explicitly enabled. It is read-only with
-# respect to NotebookLM and writes its manifest to the persistent Railway volume.
+# Optional multi-project one-shot bootstrap. The base64 payload is supplied via
+# Railway variables and is removed from the child-process environment after use.
+if [ "${RUN_MULTI_PROJECT_BOOTSTRAP:-0}" = "1" ]; then
+  python /app/multi_project_bootstrap.py
+fi
+
+# Optional diagnostic: read-only against NotebookLM.
 if [ "${RUN_GOLDEN_VISUAL_PROBE:-0}" = "1" ]; then
   python /app/visual_manifest_probe.py || echo "WARN: Golden visual manifest probe failed" >&2
 fi
 
-# Secrets are no longer needed by child processes after auth material is prepared.
-unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON CAPACITY_BOOTSTRAP_B64 RUN_CAPACITY_BOOTSTRAP
+unset NOTEBOOKLM_MASTER_TOKEN_B64 NOTEBOOKLM_MASTER_TOKEN_JSON \
+  CAPACITY_BOOTSTRAP_B64 RUN_CAPACITY_BOOTSTRAP \
+  MULTI_PROJECT_BOOTSTRAP_B64 RUN_MULTI_PROJECT_BOOTSTRAP
 
 exec python /app/launcher.py
