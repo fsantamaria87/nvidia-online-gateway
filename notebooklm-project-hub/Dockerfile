@@ -24,6 +24,7 @@ COPY project_pair_bootstrap.py /app/project_pair_bootstrap.py
 COPY project_memory.py /app/project_memory.py
 COPY memory_bootstrap.py /app/memory_bootstrap.py
 COPY memory_curator.py /app/memory_curator.py
+COPY memory_api.py /app/memory_api.py
 RUN chmod 0755 /app/entrypoint.sh
 
 EXPOSE 8080
