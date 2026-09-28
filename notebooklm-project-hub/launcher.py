@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 import hub_server as hub
-from memory_curator import register_memory_tool
+from memory_api import handle_project_memory
 from notebooklm.mcp._filelink import DOWNLOAD_TTL, FileLinkError
 
 
@@ -56,10 +56,35 @@ async def hub_image_proxy(request: Request) -> Response:
     )
 
 
-# Register the Memory Curator after the compact core tools are defined. This is
-# deliberately a separate tool because persisting project memory is a stateful
-# action and should be explicit/auditable rather than hidden inside project_sync.
-register_memory_tool(hub.mcp, hub)
+@hub.mcp.tool
+async def project_memory(
+    project: str,
+    action: str = "consider",
+    title: str | None = None,
+    activity: str | None = None,
+    decision: str | None = None,
+    result: str | None = None,
+    next_step: str | None = None,
+    evidence: str | None = None,
+    tags: list[str] | None = None,
+    recent_limit: int = 8,
+) -> dict:
+    """Curate durable project memory. consider writes only material events; force persists explicitly; status reads recent entries."""
+    if action not in {"consider", "force", "status"}:
+        raise ValueError("action must be consider, force, or status")
+    return await handle_project_memory(
+        hub,
+        project=project,
+        action=action,
+        title=title,
+        activity=activity,
+        decision=decision,
+        result=result,
+        next_step=next_step,
+        evidence=evidence,
+        tags=tags,
+        recent_limit=recent_limit,
+    )
 
 
 def main() -> None:
