@@ -13,17 +13,21 @@ from notebooklm import NotebookLMClient
 PROFILE = os.environ.get("NOTEBOOKLM_PROFILE", "server")
 REGISTRY_PATH = Path(os.environ.get("PROJECT_HUB_REGISTRY", "/data/oauth/project_hub_registry.json"))
 PAYLOAD_ENV = "KNOWLEDGE_BOOTSTRAP_B64"
+PAYLOAD_FILE = Path(os.environ.get("KNOWLEDGE_BOOTSTRAP_FILE", "/app/knowledge_hubs_payload.json"))
 _registry_lock = asyncio.Lock()
 
 
 def load_payload() -> list[dict[str, Any]]:
     raw = os.environ.get(PAYLOAD_ENV, "").strip()
-    if not raw:
-        raise RuntimeError(f"{PAYLOAD_ENV} is required")
     try:
-        payload = json.loads(base64.b64decode(raw).decode("utf-8"))
+        if raw:
+            payload = json.loads(base64.b64decode(raw).decode("utf-8"))
+        elif PAYLOAD_FILE.exists():
+            payload = json.loads(PAYLOAD_FILE.read_text(encoding="utf-8"))
+        else:
+            raise RuntimeError(f"Provide {PAYLOAD_ENV} or {PAYLOAD_FILE}")
     except Exception as exc:
-        raise RuntimeError(f"Invalid {PAYLOAD_ENV}: {exc}") from exc
+        raise RuntimeError(f"Invalid knowledge bootstrap payload: {exc}") from exc
     projects = payload.get("projects") if isinstance(payload, dict) else None
     if not isinstance(projects, list) or not projects:
         raise RuntimeError("Bootstrap payload requires non-empty projects array")
