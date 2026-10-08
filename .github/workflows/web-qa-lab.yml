@@ -1,0 +1,48 @@
+name: Web QA Lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL of the release candidate to validate"
+        required: true
+        type: string
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-qa-lab
+    env:
+      QA_BASE_URL: ${{ inputs.base_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web-qa-lab/package.json
+
+      - name: Install QA dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run deterministic QA
+        run: npm run qa
+
+      - name: Build release-gate report
+        if: always()
+        run: node scripts/release-gate.mjs || true
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-qa-lab-artifacts
+          path: web-qa-lab/artifacts/
+          if-no-files-found: warn
