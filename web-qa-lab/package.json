@@ -1,0 +1,17 @@
+{
+  "name": "web-qa-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:browsers": "playwright install chromium",
+    "qa": "playwright test",
+    "qa:smoke": "playwright test tests/smoke.spec.js",
+    "qa:visual": "playwright test tests/visual.spec.js",
+    "qa:headed": "playwright test --headed",
+    "report": "node scripts/release-gate.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
