@@ -26,7 +26,7 @@ The old `nvidia-online-gateway` was available to ChatGPT as three tools, but the
 
 ## Deploy when access is authorized
 
-Requires a Cloudflare account and a local/CI environment with Node 22+. `npm` and Wrangler were NOT able to access npm registry in the build sandbox, so a full Worker runtime integration test is still required.
+Requires a Cloudflare account and a local/CI environment with Node 22+. `npm` and Wrangler were NOT able to access npm registry in the build sandbox, but GitHub Actions has passed npm install, Wrangler dry-run and authenticated localhost MCP smoke. Remote Worker and NVIDIA integration tests are still required.
 
 ```bash
 cd nvidia_orchestrator_v2
