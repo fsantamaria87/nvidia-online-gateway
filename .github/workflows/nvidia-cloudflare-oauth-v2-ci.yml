@@ -33,3 +33,10 @@ jobs:
         run: npm run smoke
       - name: OAuth local metadata and protected-resource smoke (no provider call)
         run: npm run oauth:smoke
+      - name: Package tested source (tracked files only, no secrets)
+        run: git archive --format=zip --output="$RUNNER_TEMP/NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source.zip" HEAD cloudflare-gateway-v2/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source
+          path: ${{ runner.temp }}/NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source.zip
+          retention-days: 30
