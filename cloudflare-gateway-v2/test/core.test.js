@@ -31,3 +31,5 @@ test('review invalid json fails rather than declares success',async()=>{const r=
 test('output never contains API token in successful response',async()=>{const r=await handleAction('nvidia_infer',{profile:'fast',task:'short',data_classification:'PUBLIC'},env,{provider:successful});assert.ok(!JSON.stringify(r).includes(env.NVIDIA_API_KEY));});
 test('evalset fast transient fails over to balanced',async()=>{let n=0;const r=await handleAction('nvidia_generate_evalset',{spec:'Test',data_classification:'SYNTHETIC'},env,{provider:async(...a)=>n++===0?Promise.reject(transient):successful(...a)});assert.equal(r.status,'OK');assert.equal(r.effective_profile,'balanced');assert.equal(r.fallback_used,true);});
 test('retryable wrapped timeout/error_class is recognized for fallback',()=>assert.equal(retryable({error_class:'network_timeout'}),true));
+
+test('balanced free endpoint migrated to Nemotron 3.5 Super VL',()=>assert.equal(PROFILE_DEFAULTS.balanced,'nvidia/nemotron-3.5-super-vl-120b-a12b'));
