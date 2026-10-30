@@ -31,3 +31,5 @@ jobs:
         run: npx wrangler deploy --dry-run --config oauth-auth-server/wrangler.example.toml --outdir=.wrangler-ci-auth
       - name: Existing protected Bearer MCP local smoke (backward compatibility only)
         run: npm run smoke
+      - name: OAuth local metadata and protected-resource smoke (no provider call)
+        run: npm run oauth:smoke
