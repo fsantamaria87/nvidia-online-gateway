@@ -1,0 +1,15 @@
+# Verified Cloudflare Workers account; production OAuth AUTHORITY Worker.
+# No OAuth/GitHub/NVIDIA credentials are stored here.
+name = "nvidia-gateway-oauth-auth"
+main = "src/index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+workers_dev = true
+
+[vars]
+ISSUER = "https://nvidia-gateway-oauth-auth.francisco-santamaria-b.workers.dev"
+MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.francisco-santamaria-b.workers.dev/mcp"
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "817a7f9bd83842979cb8d99e1dcc45fe"
