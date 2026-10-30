@@ -1,0 +1,14 @@
+# Copy to wrangler.oauth.toml and replace the account subdomain before deployment.
+name = "nvidia-online-gateway-oauth-v2"
+main = "src/oauth-index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+AUTH_SERVER_URL = "https://nvidia-gateway-oauth-auth.REPLACE_ACCOUNT_SUBDOMAIN.workers.dev"
+MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.REPLACE_ACCOUNT_SUBDOMAIN.workers.dev/mcp"
+
+[[services]]
+binding = "AUTH_SERVER"
+service = "nvidia-gateway-oauth-auth"
