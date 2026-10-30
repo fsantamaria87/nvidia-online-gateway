@@ -1,0 +1,8 @@
+name = "nvidia-online-gateway-v2"
+main = "src/index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[observability]
+enabled = false
