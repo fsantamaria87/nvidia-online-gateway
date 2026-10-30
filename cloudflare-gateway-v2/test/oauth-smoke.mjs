@@ -7,8 +7,9 @@ const workers=[];
 const files=['.dev.vars','oauth-auth-server/.dev.vars'];
 const synthetic=['NVIDIA_API_KEY="LOCAL_ONLY_SYNTHETIC_KEY"\nALLOWED_GITHUB_ID="123"\n',
 'GITHUB_CLIENT_ID="LOCAL_ONLY_SYNTHETIC_CLIENT"\nGITHUB_CLIENT_SECRET="LOCAL_ONLY_SYNTHETIC_SECRET"\nALLOWED_GITHUB_ID="123"\n'];
-function launch(path,port){
-  const child=spawn(process.execPath,['node_modules/wrangler/bin/wrangler.js','dev','--config',path,'--ip','127.0.0.1','--port',String(port)],{stdio:['ignore','pipe','pipe']});
+function launch(path,port,vars={}){
+  const varArgs=Object.entries(vars).flatMap(([key,value])=>['--var',key+':'+value]);
+  const child=spawn(process.execPath,['node_modules/wrangler/bin/wrangler.js','dev','--config',path,'--ip','127.0.0.1','--port',String(port),...varArgs],{stdio:['ignore','pipe','pipe']});
   const item={child,log:''};
   child.stdout.on('data',chunk=>{item.log=(item.log+chunk.toString()).slice(-1000)});
   child.stderr.on('data',chunk=>{item.log=(item.log+chunk.toString()).slice(-1000)});
@@ -23,7 +24,7 @@ async function ready(url){
 }
 try{
   for(let i=0;i<files.length;i++)writeFileSync(files[i],synthetic[i],{mode:0o600});
-  launch('oauth-auth-server/wrangler.example.toml',8790);
+  launch('oauth-auth-server/wrangler.example.toml',8790,{ISSUER:authority,MCP_SERVER_URL:resource+'/mcp'});
   // Discovery is public but cannot issue an access token without login and consent.
   const metadata=await ready(authority+'/.well-known/oauth-authorization-server');
   assert.equal(metadata.status,200,'OAuth metadata must be public');
@@ -31,7 +32,7 @@ try{
   assert.ok(authorization.authorization_endpoint);
   assert.ok(authorization.token_endpoint);
   assert.ok(authorization.code_challenge_methods_supported?.includes('S256'));
-  launch('wrangler.oauth.example.toml',8791);
+  launch('wrangler.oauth.example.toml',8791,{AUTH_SERVER_URL:authority,MCP_SERVER_URL:resource+'/mcp'});
   const health=await ready(resource+'/health');
   assert.equal(health.status,200);
   assert.equal((await health.json()).auth,'oauth2.1');
