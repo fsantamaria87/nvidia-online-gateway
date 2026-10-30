@@ -6,8 +6,8 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 workers_dev = true
 
 [vars]
-ISSUER = "https://nvidia-gateway-oauth-auth.REPLACE_ACCOUNT_SUBDOMAIN.workers.dev"
-MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.REPLACE_ACCOUNT_SUBDOMAIN.workers.dev/mcp"
+ISSUER = "https://nvidia-gateway-oauth-auth.example-account.workers.dev"
+MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.example-account.workers.dev/mcp"
 
 [[kv_namespaces]]
 binding = "OAUTH_KV"
