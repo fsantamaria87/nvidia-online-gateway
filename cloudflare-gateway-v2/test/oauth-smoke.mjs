@@ -24,7 +24,7 @@ async function ready(url){
 }
 try{
   for(let i=0;i<files.length;i++)writeFileSync(files[i],synthetic[i],{mode:0o600});
-  launch('oauth-auth-server/wrangler.example.toml',8790,{ISSUER:authority,MCP_SERVER_URL:resource+'/mcp'});
+  launch('oauth-auth-server/wrangler.example.toml',8790,{ISSUER:authority,MCP_SERVER_URL:resource+'/mcp',GITHUB_CLIENT_ID:'LOCAL_ONLY_SYNTHETIC_CLIENT',GITHUB_CLIENT_SECRET:'LOCAL_ONLY_SYNTHETIC_SECRET',ALLOWED_GITHUB_ID:'123'});
   // Discovery is public but cannot issue an access token without login and consent.
   const metadata=await ready(authority+'/.well-known/oauth-authorization-server');
   assert.equal(metadata.status,200,'OAuth metadata must be public');
@@ -32,7 +32,7 @@ try{
   assert.ok(authorization.authorization_endpoint);
   assert.ok(authorization.token_endpoint);
   assert.ok(authorization.code_challenge_methods_supported?.includes('S256'));
-  launch('wrangler.oauth.example.toml',8791,{AUTH_SERVER_URL:authority,MCP_SERVER_URL:resource+'/mcp'});
+  launch('wrangler.oauth.example.toml',8791,{AUTH_SERVER_URL:authority,MCP_SERVER_URL:resource+'/mcp',NVIDIA_API_KEY:'LOCAL_ONLY_SYNTHETIC_KEY',ALLOWED_GITHUB_ID:'123'});
   const health=await ready(resource+'/health');
   assert.equal(health.status,200);
   assert.equal((await health.json()).auth,'oauth2.1');
