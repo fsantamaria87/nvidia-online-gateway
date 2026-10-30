@@ -1,0 +1,30 @@
+name: NVIDIA Cloudflare MCP v2 candidate checks
+on:
+  push:
+    branches:
+      - migration/nvidia-cloudflare-v2-rc1
+  pull_request:
+    paths:
+      - cloudflare-gateway-v2/**
+      - .github/workflows/nvidia-cloudflare-v2-ci.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: cloudflare-gateway-v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run check
+      - run: npm test
+      - name: Bundle Worker (no deploy, no credentials)
+        run: npx wrangler deploy --dry-run --outdir=./.wrangler-ci
+      - name: MCP runtime smoke (synthetic local secrets; no provider call)
+        run: npm run smoke
