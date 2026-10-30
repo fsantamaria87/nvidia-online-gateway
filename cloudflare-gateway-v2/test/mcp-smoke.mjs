@@ -20,7 +20,8 @@ try{
   const invoke=async(id,method,params={})=>{
     const r=await fetch(url+'/mcp',{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json, text/event-stream','Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id,method,params})});
     const raw=await r.text();assert.equal(r.status,200,`${method} HTTP ${r.status} ${raw.slice(0,800)}`);
-    const events=raw.split(/\r?\n/).filter(x=>x.startsWith('data:')).map(x=>{try{return JSON.parse(x.slice(5).trim());}catch{return null;}}).filter(Boolean);\n    const obj=events.find(x=>x.id===id)??(events.length?events[0]:JSON.parse(raw));assert.equal(obj.jsonrpc,'2.0');assert.ok(!obj.error,`MCP error: ${JSON.stringify(obj.error)}`);return obj.result;
+    const events=raw.split(/\r?\n/).filter(x=>x.startsWith('data:')).map(x=>{try{return JSON.parse(x.slice(5).trim());}catch{return null;}}).filter(Boolean);
+    const obj=events.find(x=>x.id===id)??(events.length?events[0]:JSON.parse(raw));assert.equal(obj.jsonrpc,'2.0');assert.ok(!obj.error,`MCP error: ${JSON.stringify(obj.error)}`);return obj.result;
   };
   // Legacy mode is explicitly supported by Cloudflare's stateless MCP v2 handler.
   const init=await invoke(1,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'nvidia-v2-ci',version:'0.1'}});
