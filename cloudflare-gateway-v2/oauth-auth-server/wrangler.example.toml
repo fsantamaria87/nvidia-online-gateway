@@ -1,0 +1,14 @@
+# Copy to wrangler.toml, replace subdomain and KV ID; never commit secrets.
+name = "nvidia-gateway-oauth-auth"
+main = "src/index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+workers_dev = true
+
+[vars]
+ISSUER = "https://nvidia-gateway-oauth-auth.example-account.workers.dev"
+MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.example-account.workers.dev/mcp"
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "00000000000000000000000000000000"

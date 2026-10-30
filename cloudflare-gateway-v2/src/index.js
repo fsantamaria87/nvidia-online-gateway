@@ -7,7 +7,7 @@ const dataClass=z.enum(['PUBLIC','SYNTHETIC','INTERNAL_NON_SENSITIVE','INTERNAL_
 const budget=z.number().int().min(0).max(10).default(0);
 const registeredNames=['nvidia_infer','nvidia_review','nvidia_generate_evalset'];
 
-function createServer(env){
+export function createServer(env){
   const server=new McpServer({name:'nvidia-online-gateway',version:VERSION});
   server.registerTool('nvidia_infer',{title:'NVIDIA model inference',description:'Optional NVIDIA specialist: fast/balanced/deep/auto, privacy guard, one optional call per stage.',inputSchema:z.object({profile:z.enum(['fast','balanced','deep','auto']),task:z.string().min(1).max(30000),context_summary:z.string().max(30000).optional(),data_classification:dataClass,external_provider_approved:z.boolean().default(false),optional_provider_calls_used:budget,stage_id:z.string().max(200).optional(),output_mode:z.enum(['text','json']).default('text')})},async args=>jsonResult(await handleAction('nvidia_infer',args,env)));
   server.registerTool('nvidia_review',{title:'Independent NVIDIA review',description:'Independent advisory review against explicit rubric; NOT release approval.',inputSchema:z.object({subject:z.string().min(1).max(30000),candidate:z.string().min(1).max(50000),rubric:z.string().min(1).max(20000),data_classification:dataClass,external_provider_approved:z.boolean().default(false),optional_provider_calls_used:budget,stage_id:z.string().max(200).optional()})},async args=>jsonResult(await handleAction('nvidia_review',args,env)));

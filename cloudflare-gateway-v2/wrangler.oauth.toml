@@ -1,0 +1,16 @@
+# Verified Cloudflare Workers account; production OAuth RESOURCE Worker.
+# PUBLIC configuration only. Secrets must be configured in Cloudflare, never GitHub.
+name = "nvidia-online-gateway-oauth-v2"
+main = "src/oauth-index.js"
+compatibility_date = "2026-10-29"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+ALLOWED_GITHUB_ID = "311271129" # GitHub numeric owner ID, public account identifier; not a credential.
+AUTH_SERVER_URL = "https://nvidia-gateway-oauth-auth.francisco-santamaria-b.workers.dev"
+MCP_SERVER_URL = "https://nvidia-online-gateway-oauth-v2.francisco-santamaria-b.workers.dev/mcp"
+
+[[services]]
+binding = "AUTH_SERVER"
+service = "nvidia-gateway-oauth-auth"

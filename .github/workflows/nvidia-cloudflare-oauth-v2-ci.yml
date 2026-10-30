@@ -1,0 +1,46 @@
+name: NVIDIA Cloudflare OAuth2.1 MCP v2 gate
+on:
+  push:
+    branches:
+      - migration/nvidia-cloudflare-oauth-v2-rc2
+  pull_request:
+    paths:
+      - cloudflare-gateway-v2/**
+      - .github/workflows/nvidia-cloudflare-oauth-v2-ci.yml
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: cloudflare-gateway-v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run check
+      - run: npm run oauth:check
+      - run: npm test
+      - name: Build OAuth resource Worker (no deploy or secrets)
+        run: npx wrangler deploy --dry-run --config wrangler.oauth.example.toml --outdir=.wrangler-ci-oauth
+      - name: Build OAuth authorization Worker (no deploy or secrets)
+        run: npx wrangler deploy --dry-run --config oauth-auth-server/wrangler.example.toml --outdir=.wrangler-ci-auth
+      - name: Build actual authorized Cloudflare OAuth resource config (NO deploy)
+        run: npx wrangler deploy --dry-run --config wrangler.oauth.toml --outdir=.wrangler-ci-production-resource
+      - name: Build actual authorized Cloudflare OAuth authority config with real KV ID (NO deploy)
+        run: npx wrangler deploy --dry-run --config oauth-auth-server/wrangler.toml --outdir=.wrangler-ci-production-authority
+      - name: Existing protected Bearer MCP local smoke (backward compatibility only)
+        run: npm run smoke
+      - name: OAuth local metadata and protected-resource smoke (no provider call)
+        run: npm run oauth:smoke
+      - name: Package tested source (tracked files only, no secrets)
+        run: git -C .. archive --format=zip --output="$RUNNER_TEMP/NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source.zip" HEAD cloudflare-gateway-v2/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source
+          path: ${{ runner.temp }}/NVIDIA_Online_Gateway_v2.1.0_RC2_OAuth_Validated_Source.zip
+          retention-days: 30

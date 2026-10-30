@@ -1,23 +1,30 @@
-# Delivery gate — NVIDIA Gateway v2.0.0-rc1
+# NVIDIA Gateway v2.1 OAuth — Acceptance & Cutover Gate
 
-| Gate | Status | Evidence | Action |
-|---|---|---|---|
-| Legacy ChatGPT MCP calls | FAIL | `nvidia_infer` and `nvidia_review`: `MCP SSE probe returned 404 from railway.app` | Replace endpoint after server is deployed |
-| Railway NVIDIA server | OFFLINE | Railway environment status, no active deployment | Preserve for rollback |
-| Railway LibroVerse service | OFFLINE | Same Railway environment, volume exists | Do not mutate |
-| Source recovered | PASS | Public repo `fsantamaria87/nvidia-online-gateway` server.js v0.5.0 | Original preserved |
-| Cloudflare implementation source | PASS (build) | `npm install`, syntax, `wrangler deploy --dry-run` passed in GitHub Actions | Test remote deploy with credentials |
-| Offline QA | PASS | 26 synthetic tests, npm test | Preserved in CI |
-| JavaScript syntax | PASS | `node --check` | Retest bundled code |
-| Auth fail-closed | PASS (unit/static) | Bearer+origin, missing-secret guard, secrets absent from repo | Test deployed endpoint |
-| Provider API key valid | NOT_RUN | Railway only exposed *name* `NVIDIA_API_KEY` | Configure new secret privately |
-| Cloudflare Worker deployed | NOT_RUN | No connected Cloudflare account/tool/secret | Deploy with approved credentials |
-| Local MCP 3 tools listed | PASS (localhost) | `wrangler dev` + authorized `initialize` and `tools/list`; unauthorized 401, invalid Origin 403 | Re-test remote deployment |
-| Real NVIDIA inference | NOT_RUN | No working new provider connection | Synthetic end-to-end live test |
-| ChatGPT App rebinding | NOT_RUN | Legacy App still points to Railway | Use existing App owner/source or supported custom MCP flow |
-| Codex MCP connection | NOT_RUN | Requires Codex host and auth configuration | Test on target host |
-| Old Railway cleanup | NOT_RUN | Other services share Railway project and storage | Wait for validated replacement |
+## Evidence status (2026-10-30 UTC)
+| Gate | State | Evidence / limitation |
+|---|---|---|
+| Source recovery, branch and rollback | PASS | Old main preserved; PR #5 legacy candidate, PR #6 OAuth RC2 draft |
+| 3 original tool schemas | PASS local | Original `initialize` + `tools/list` returns exactly three tools |
+| Node SDK + dependencies | PASS CI | npm install, JavaScript check |
+| Unit/privacy/budget/fallback/model routes | PASS 27/27 | Synthetic tests including balanced model change |
+| Cloudflare authorization Worker bundle | PASS CI | Wrangler dry-run only, no deployment |
+| Cloudflare resource Worker bundle | PASS CI | Wrangler dry-run only, no deployment |
+| OAuth metadata and S256 PKCE | PASS local | Local Wrangler `/.well-known/oauth-authorization-server` |
+| OAuth anonymous access rejection | PASS local | Protected `/mcp` returns 401 |
+| Static bearer compatibility | PASS local | Legacy candidate 401/403 and 3 tools |
+| Source artifact | PASS | Github Actions reproducible ZIP, no real secrets |
+| Cloudflare account authorized | BLOCKED | No connected Cloudflare account/session in current environment |
+| GitHub OAuth App and secrets | NOT_RUN | Must be configured privately in owning accounts |
+| Real OAuth approval + callback | NOT_RUN | Requires browser user authorization |
+| Live NVIDIA API/model/quota | NOT_RUN | API key not available through connected tools |
+| ChatGPT plugin rebound to new server | NOT_RUN | Previous registered App remains connected to Railway |
+| Codex MCP linkage | NOT_RUN | Requires explicit separate client connection |
+| Railway retirement | NOT_RUN | Preserve other Railway services, especially LibroVerse |
 
-**GitHub CI reference:** PR #5, local build + 26 tests + authenticated localhost MCP smoke PASS (run 40996049088). Full NVIDIA provider call and remote ChatGPT integration remain NOT_RUN.
+GitHub CI green run: https://github.com/fsantamaria87/nvidia-online-gateway/actions/runs/41004644504
 
-**Acceptance rule:** do not label FINAL or functional until actual authenticated `tools/list`, all three tools and an actual NVIDIA API call return success from deployed Worker. Never claim a passing local mock is production proof.
+**PASS source/local != repaired production.** Production gate requires explicit remote `nvidia_infer` (SYNTHETIC) status=OK, then `nvidia_review` + `nvidia_generate_evalset` and actual ChatGPT MCP tool call. Never publish an anonymous endpoint backed by NVIDIA credits. Never expose credentials in GitHub, ChatGPT, source ZIP or screen captures.
+
+**Primary deploy workflow:** `oauth-auth-server/README.md`; deploy auth Worker then resource Worker using `wrangler.oauth.toml`, NOT `wrangler.toml`.
+
+**Protection of existing services:** never remove the NVIDIA/NotebookLM Railway projects, nvidia-status-page, or libroverse-cloud-free volume before production cutover and backups.

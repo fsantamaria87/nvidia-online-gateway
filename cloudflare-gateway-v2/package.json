@@ -1,6 +1,6 @@
 {
   "name": "nvidia-online-mcp-cloudflare-v2",
-  "version": "2.0.0-rc1",
+  "version": "2.1.0-rc2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,12 +8,15 @@
     "check": "node --check src/core.js && node --check src/index.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "smoke": "node test/mcp-smoke.mjs"
+    "smoke": "node test/mcp-smoke.mjs",
+    "oauth:check": "node --check src/oauth-index.js && node --check oauth-auth-server/src/index.js",
+    "oauth:smoke": "node test/oauth-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
     "agents": "0.32.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@cloudflare/workers-oauth-provider": "latest"
   },
   "devDependencies": {
     "wrangler": "latest"

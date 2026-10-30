@@ -5,7 +5,7 @@ const env={NVIDIA_API_KEY:'test-provider-token'};
 const successful= async (env,model,messages) => ({model,content:'{"cases":[{"id":"S1","input":"test"}]}',usage:{total_tokens:5},attempts:1,retries:0});
 const transient = Object.assign(new Error('provider failed'),{status:503,attempts:1,retries:0});
 const perm = Object.assign(new Error('provider failed'),{status:401,attempts:1,retries:0});
-test('version and 3 profile model defaults',()=>{assert.match(VERSION,/2\.0/);assert.equal(Object.keys(PROFILE_DEFAULTS).length,3);});
+test('version and 3 profile model defaults',()=>{assert.match(VERSION,/2\.1/);assert.equal(Object.keys(PROFILE_DEFAULTS).length,3);});
 test('model overrides are configurable without code changes',()=>assert.equal(modelFor({NVIDIA_MODEL_FAST:'custom/fast'},'fast'),'custom/fast'));
 test('SYNTHETIC and PUBLIC accepted',()=>{assert.equal(guardData('PUBLIC').allowed,true);assert.equal(guardData('SYNTHETIC').allowed,true);});
 test('UNKNOWN / INTERNAL_SENSITIVE / unapproved internal fail closed',()=>{for(const c of ['UNKNOWN','INTERNAL_SENSITIVE','INTERNAL_NON_SENSITIVE'])assert.equal(guardData(c).allowed,false);});
@@ -31,3 +31,5 @@ test('review invalid json fails rather than declares success',async()=>{const r=
 test('output never contains API token in successful response',async()=>{const r=await handleAction('nvidia_infer',{profile:'fast',task:'short',data_classification:'PUBLIC'},env,{provider:successful});assert.ok(!JSON.stringify(r).includes(env.NVIDIA_API_KEY));});
 test('evalset fast transient fails over to balanced',async()=>{let n=0;const r=await handleAction('nvidia_generate_evalset',{spec:'Test',data_classification:'SYNTHETIC'},env,{provider:async(...a)=>n++===0?Promise.reject(transient):successful(...a)});assert.equal(r.status,'OK');assert.equal(r.effective_profile,'balanced');assert.equal(r.fallback_used,true);});
 test('retryable wrapped timeout/error_class is recognized for fallback',()=>assert.equal(retryable({error_class:'network_timeout'}),true));
+
+test('balanced free endpoint migrated to Nemotron 3.5 Super VL',()=>assert.equal(PROFILE_DEFAULTS.balanced,'nvidia/nemotron-3.5-super-vl-120b-a12b'));
