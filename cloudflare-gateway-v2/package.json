@@ -9,7 +9,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "smoke": "node test/mcp-smoke.mjs",
-    "oauth:check": "node --check src/oauth-index.js && node --check oauth-auth-server/src/index.js"
+    "oauth:check": "node --check src/oauth-index.js && node --check oauth-auth-server/src/index.js",
+    "oauth:smoke": "node test/oauth-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
