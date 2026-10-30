@@ -5,7 +5,7 @@ const env={NVIDIA_API_KEY:'test-provider-token'};
 const successful= async (env,model,messages) => ({model,content:'{"cases":[{"id":"S1","input":"test"}]}',usage:{total_tokens:5},attempts:1,retries:0});
 const transient = Object.assign(new Error('provider failed'),{status:503,attempts:1,retries:0});
 const perm = Object.assign(new Error('provider failed'),{status:401,attempts:1,retries:0});
-test('version and 3 profile model defaults',()=>{assert.match(VERSION,/2\.0/);assert.equal(Object.keys(PROFILE_DEFAULTS).length,3);});
+test('version and 3 profile model defaults',()=>{assert.match(VERSION,/2\.1/);assert.equal(Object.keys(PROFILE_DEFAULTS).length,3);});
 test('model overrides are configurable without code changes',()=>assert.equal(modelFor({NVIDIA_MODEL_FAST:'custom/fast'},'fast'),'custom/fast'));
 test('SYNTHETIC and PUBLIC accepted',()=>{assert.equal(guardData('PUBLIC').allowed,true);assert.equal(guardData('SYNTHETIC').allowed,true);});
 test('UNKNOWN / INTERNAL_SENSITIVE / unapproved internal fail closed',()=>{for(const c of ['UNKNOWN','INTERNAL_SENSITIVE','INTERNAL_NON_SENSITIVE'])assert.equal(guardData(c).allowed,false);});
