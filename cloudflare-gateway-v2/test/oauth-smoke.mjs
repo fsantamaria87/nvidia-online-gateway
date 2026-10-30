@@ -19,7 +19,7 @@ async function ready(url){
     try{const r=await fetch(url);if(r.status!==502&&r.status!==503)return r;}catch{}
     await new Promise(r=>setTimeout(r,300));
   }
-  throw Error('OAuth Worker not responding: '+workers.map(w=>w.log.slice(-200)).join(' | '));
+  throw Error('OAuth Worker not responding: '+workers.map(w=>`exit=${w.child.exitCode} log=${w.log.slice(-1600)}`).join(' | '));
 }
 try{
   for(let i=0;i<files.length;i++)writeFileSync(files[i],synthetic[i],{mode:0o600});
