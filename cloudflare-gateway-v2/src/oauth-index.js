@@ -4,7 +4,7 @@ import { env as configEnv } from 'cloudflare:workers';
 import { createServer } from './index.js';
 import { VERSION, originAllowed } from './core.js';
 
-const resourceHandler=createMcpHandler((env)=>createServer(env),{
+const resourceHandler=createMcpHandler(()=>createServer(configEnv),{
   route:'/mcp',corsOptions:false,legacy:'stateless',responseMode:'json'
 });
 const protectedMcp=new OAuthResourceServer({
