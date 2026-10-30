@@ -1,9 +1,9 @@
 // NVIDIA Online Gateway v2 — portable, deterministic policy and provider adapter.
 // No tokens, credentials, or user prompts are logged by this module.
-export const VERSION = '2.0.0-rc1';
+export const VERSION = '2.1.0-rc2';
 export const PROFILE_DEFAULTS = Object.freeze({
   fast: 'nvidia/nemotron-3.5-lightning-30b-a3b',
-  balanced: 'nvidia/nemotron-3-super-120b-a12b',
+  balanced: 'nvidia/nemotron-3.5-super-vl-120b-a12b',
   deep: 'nvidia/nemotron-3-ultra-550b-a55b',
 });
 export const MODEL_ENV_KEYS = Object.freeze({fast:'NVIDIA_MODEL_FAST',balanced:'NVIDIA_MODEL_BALANCED',deep:'NVIDIA_MODEL_DEEP'});
