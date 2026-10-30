@@ -22,8 +22,12 @@ function consentPage(details,handle){
     '<p>Scopes requested:</p><form method="POST" action="/authorize"><input type="hidden" name="handle" value="'+esc(handle)+'">'+scopes+
     '<p><button name="decision" value="approve">Continue with GitHub</button> <button name="decision" value="deny">Deny</button></p></form></main></body></html>';
 }
+function validEndpoint(value){
+  try {const u=new URL(value);return u.protocol==='https:' || (u.protocol==='http:' && ['localhost','127.0.0.1','[::1]'].includes(u.hostname));}
+  catch{return false;}
+}
 function requireConfig(env){
-  return Boolean(env.ISSUER?.startsWith('https://') && env.MCP_SERVER_URL?.startsWith('https://') &&
+  return Boolean(validEndpoint(env.ISSUER) && validEndpoint(env.MCP_SERVER_URL) &&
     env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET && env.ALLOWED_GITHUB_ID && env.OAUTH_KV);
 }
 async function authorize(request,env){
