@@ -12,5 +12,5 @@ The source used `@modelcontextprotocol/sdk` v1 with Streamable HTTP at `/mcp`; c
 ## Pinned conditions
 - Public GitHub source is fine because no secrets embedded.
 - Library compatibility validated via Cloudflare documentation on 2026-10-29, but runtime cannot be verified until `npm install` with network.
-- SDK v2 Cloudflare Agents requires version compatibility; package uses server 2.3.1 and `agents` latest. Pin exact resolution in `package-lock.json` when dependencies can install successfully. Do not claim fully reproducible without lockfile.
+- SDK v2 Cloudflare Agents requires version compatibility; package uses server 2.4.0 and `agents` 0.32.0. Pin exact resolution in `package-lock.json` when dependencies can install successfully. Do not claim fully reproducible without lockfile.
 - Production needs rate limits beyond the stateless local advisory budget, and periodic key rotations.
